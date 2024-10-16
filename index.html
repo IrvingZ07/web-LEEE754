@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertidor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #4a4a8d;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #4a4a8d;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #d1d1e8;
+        }
+        input[type="text"], input[type="button"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="button"] {
+            background-color: #4a4a8d;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="button"]:hover {
+            background-color: #38387e;
+        }
+        #resultadoIEEE754 {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+    
+    <script>
+        function convertir() {
+            let decimal = parseFloat(document.getElementById("decimal").value);
+            
+            let parteEntera = Math.floor(decimal);
+            let resultadosEnteros = document.getElementById("resultadoPE");
+            resultadosEnteros.innerHTML = TablaPE(parteEntera);
+            
+            let parteFraccionaria = decimal - parteEntera;
+            let resultadosFraccionarios = document.getElementById("resultadoPF");
+            resultadosFraccionarios.innerHTML = TablaPF(parteFraccionaria);
+            
+            mostrarIEEE754(decimal);
+        }
+
+        function TablaPE(parteEntera) {
+            let divisor = 2;
+            let resultadoHTML = "<tr><th>Valor</th><th>Divisor</th><th>Cociente</th><th>Residuo</th></tr>";
+            let valor = parteEntera;
+
+            while (valor > 0) {
+                let cociente = Math.floor(valor / divisor);
+                let residuo = Math.floor(valor % divisor);
+                resultadoHTML += `<tr><td>${valor}</td><td>${divisor}</td><td>${cociente}</td><td>${residuo}</td></tr>`;
+                valor = cociente;
+            }
+            return resultadoHTML;
+        }
+
+        function TablaPF(parteFraccionaria) {
+            let resultadoHTML = "<tr><th>Valor</th><th>Multiplicador</th><th>Producto</th><th>Digito</th></tr>";
+            let mul = 2;
+            let valor = parteFraccionaria;
+
+            for (let i = 0; i < 8; i++) {
+                let Producto = valor * mul;
+                let digito = Math.floor(Producto);
+                resultadoHTML += `<tr><td>${valor.toFixed(15)}</td><td>${mul}</td><td>${Producto.toFixed(15)}</td><td>${digito}</td></tr>`;
+                valor = Producto - digito;
+            }
+            return resultadoHTML;
+        }
+
+        function mostrarIEEE754(decimal) {
+            let buffer = new ArrayBuffer(4);
+            let view = new DataView(buffer);
+            view.setFloat32(0, decimal);
+
+            let binarioIEEE754 = '';
+            for (let i = 0; i < 4; i++) {
+                binarioIEEE754 += view.getUint8(i).toString(2).padStart(8, '0');
+            }
+
+            let signo = binarioIEEE754[0];
+            let exponente = binarioIEEE754.slice(1, 9);
+            let fraccion = binarioIEEE754.slice(9);
+
+            let exponenteValor = parseInt(exponente, 2);
+            let exponenteReal = exponenteValor - 127;
+
+            document.getElementById("signo").innerText = signo === "0" ? "+" : "-";
+            document.getElementById("exponente").innerText = `${exponenteValor} (real: ${exponenteReal})`;
+            document.getElementById("fraccion").innerText = fraccion;
+            document.getElementById("resultadoIEEE754").innerText = `Resultado IEEE 754: ${binarioIEEE754}`;
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Convertidor Punto Flotante</h1>
+        <p>Esta página le permitirá convertir un número decimal a su representación en formato binario IEEE 754.</p>
+        <div>
+            <form>
+                <input type="text" id="decimal" placeholder="Ingrese un número decimal">
+                <input type="button" value="Convertir" onclick="convertir()">
+            </form>
+        </div>
+        <h2>Parte Entera</h2>
+        <table id="resultadoPE"></table>
+
+
+        <h2>Parte Fraccionaria</h2>
+        <table id="resultadoPF">
+        </table>
+
+        <h2>Resultado IEEE 754</h2>
+        <div id="resultadoIEEE754"></div>
+        <div>Signo: <span id="signo"></span></div>
+        <div>Exponente: <span id="exponente"></span></div>
+        <div>Fracción: <span id="fraccion"></span></div>
+    </div>
+</body>
+</html>
